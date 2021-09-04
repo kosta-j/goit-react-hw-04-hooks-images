@@ -1,3 +1,3 @@
 # Image Finder React App
 
-This app uses Pixabay API
+Version 2 - with hooks
