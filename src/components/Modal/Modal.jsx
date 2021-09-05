@@ -15,7 +15,6 @@ function Modal({ onClose, children }) {
   });
 
   function handleKeydown(e) {
-    console.log('Escape pushed');
     if (e.code === 'Escape') {
       onClose();
     }
