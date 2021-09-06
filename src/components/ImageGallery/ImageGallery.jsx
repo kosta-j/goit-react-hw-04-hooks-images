@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import apiService from '../../services/apiServise';
 import Button from '../Button/Button';
@@ -15,36 +15,42 @@ function ImageGallery({ query }) {
   const [modal, setModal] = useState(false);
   const [modalHit, setModalHit] = useState({});
 
-  useEffect(() => {
-    const loadImages = async () => {
-      try {
-        setLoader(true);
-        const response = await apiService(query, page);
-        setHits(response.data.hits);
+  function usePrevious(value) {
+    const ref = useRef();
+    useEffect(() => {
+      ref.current = value;
+    });
+    return ref.current;
+  }
 
-        if (response.data.hits.length === 0) {
-          return toast.warn('Oops, such item has not found');
-        }
-      } catch (error) {
-        console.log(error);
-        return toast.error('Error while loading data. Try again later');
-      } finally {
-        setLoader(false);
-      }
-    };
-    if (query) {
+  const prev = usePrevious({ query, page });
+
+  useEffect(() => {
+    if (!query || prev === undefined) {
+      return;
+    }
+
+    if (prev.page !== page && page > 1) {
+      loadImages();
+    }
+
+    if (prev.query !== query) {
       resetState();
       loadImages();
     }
-  }, [query]);
 
-  useEffect(() => {
-    const loadMoreImages = async () => {
+    async function loadImages() {
       try {
         setLoader(true);
+
         const response = await apiService(query, page);
-        setHits(prevHits => [...prevHits, ...response.data.hits]);
-        autoScroll();
+
+        if (prev.page !== page && page > 1) {
+          setHits(prevHits => [...prevHits, ...response.data.hits]);
+          autoScroll();
+        } else {
+          setHits(response.data.hits);
+        }
 
         if (response.data.hits.length === 0) {
           return toast.warn('Oops, such item has not found');
@@ -55,11 +61,8 @@ function ImageGallery({ query }) {
       } finally {
         setLoader(false);
       }
-    };
-    if (page > 1) {
-      loadMoreImages();
     }
-  }, [page]);
+  }, [page, prev, query]);
 
   function autoScroll() {
     window.scrollTo({
